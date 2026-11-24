@@ -1,4 +1,5 @@
 import express from 'express';
+import http from 'http';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -29,13 +30,17 @@ const isProd = process.env.NODE_ENV === 'production';
 const PORT = process.env.PORT || 3000;
 
 async function startServer() {
+  const httpServer = http.createServer(app);
+
   if (!isProd) {
+    const disableHmr = process.env.DISABLE_HMR === 'true';
     const vite = await import('vite');
     const viteDevServer = await vite.createServer({
       server: {
         middlewareMode: true,
-        hmr: process.env.DISABLE_HMR !== 'true',
-        watch: process.env.DISABLE_HMR === 'true' ? null : {},
+        hmr: !disableHmr,
+        ws: disableHmr ? false : { server: httpServer },
+        watch: disableHmr ? null : {},
       },
       appType: 'custom',
     });
@@ -47,6 +52,9 @@ async function startServer() {
         const fs = await import('fs');
         let template = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf-8');
         template = await viteDevServer.transformIndexHtml(req.originalUrl, template);
+        if (disableHmr) {
+          template = template.replace(/<script\s+type="module"\s+src="\/@vite\/client"><\/script>\s*/i, '');
+        }
         res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
       } catch (e) {
         viteDevServer.ssrFixStacktrace(e as Error);
@@ -61,7 +69,7 @@ async function startServer() {
     });
   }
 
-  app.listen(Number(PORT), '0.0.0.0', () => {
+  httpServer.listen(Number(PORT), '0.0.0.0', () => {
     console.log(`🚀 Servidor ejecutándose en http://0.0.0.0:${PORT}`);
   });
 }
