@@ -1,0 +1,6 @@
+{
+  "name": "Simulador Modelo Financiero Plan de Negocio",
+  "description": "Herramienta interactiva para aprendices y emprendedores para simular la viabilidad financiera de su plan de negocio, calcular VAN, TIR, Flujo de Caja y Punto de Equilibrio, recibir mentoría crítica de IA y exportar informes de evidencia de aprendizaje.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,93 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reusable Hardened Helpers
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    // Validation Blueprint for Project Entity (matches firebase-blueprint.json)
+    function isValidProject(data) {
+      return data.keys().hasAll(['ownerId', 'name', 'createdAt', 'updatedAt', 'inputs'])
+        && data.keys().hasOnly(['ownerId', 'name', 'createdAt', 'updatedAt', 'inputs', 'diagnosis', 'summary'])
+        && data.ownerId is string
+        && data.ownerId.size() >= 1
+        && data.ownerId.size() <= 128
+        && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerId == request.auth.uid
+        && data.name is string
+        && data.name.size() >= 1
+        && data.name.size() <= 150
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && data.inputs is map
+        && data.inputs.student is map
+        && data.inputs.investments is list
+        && data.inputs.investments.size() <= 50
+        && (data.inputs.investments.size() == 0 || data.inputs.investments[0] is map)
+        && data.inputs.products is list
+        && data.inputs.products.size() <= 50
+        && (data.inputs.products.size() == 0 || data.inputs.products[0] is map)
+        && data.inputs.operatingExpenses is list
+        && data.inputs.operatingExpenses.size() <= 50
+        && (data.inputs.operatingExpenses.size() == 0 || data.inputs.operatingExpenses[0] is map)
+        && (!('teamMembers' in data.inputs.student) || (
+          data.inputs.student.teamMembers is list
+          && data.inputs.student.teamMembers.size() <= 20
+          && (data.inputs.student.teamMembers.size() == 0 || data.inputs.student.teamMembers[0] is map)
+        ))
+        && (!('diagnosis' in data) || data.diagnosis == null || data.diagnosis is map)
+        && (!('summary' in data) || data.summary == null || data.summary is map);
+    }
+
+    match /projects/{projectId} {
+      allow get: if isVerifiedUser()
+        && isValidId(projectId)
+        && existing().ownerId == request.auth.uid;
+
+      allow list: if isVerifiedUser()
+        && existing().ownerId == request.auth.uid;
+
+      allow create: if isVerifiedUser()
+        && isValidId(projectId)
+        && isValidProject(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser()
+        && isValidId(projectId)
+        && isValidProject(incoming())
+        && existing().ownerId == request.auth.uid
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'inputs', 'diagnosis', 'summary', 'updatedAt']);
+
+      allow delete: if isVerifiedUser()
+        && isValidId(projectId)
+        && existing().ownerId == request.auth.uid;
+    }
+  }
+}

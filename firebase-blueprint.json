@@ -1,0 +1,55 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Project",
+      "description": "Simulated SENA business plan financial model saved by an authenticated user.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the user who owns this simulated project.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the simulated project.",
+          "minLength": 1,
+          "maxLength": 150
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the project was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the project was last updated."
+        },
+        "inputs": {
+          "type": "object",
+          "description": "Complete structured inputs of steps 1 to 6 of the financial simulator."
+        },
+        "diagnosis": {
+          "type": "object",
+          "description": "Optional AI financial diagnosis report generated for the project."
+        },
+        "summary": {
+          "type": "object",
+          "description": "Optional cached financial metrics summary (totalInvestment, npv, irr)."
+        }
+      },
+      "required": ["ownerId", "name", "createdAt", "updatedAt", "inputs"]
+    }
+  },
+  "firestore": {
+    "/projects/{projectId}": {
+      "schema": {
+        "$ref": "#/entities/Project"
+      },
+      "description": "Top-level collection storing each user's saved business plan financial simulations, strictly scoped by ownerId."
+    }
+  }
+}
