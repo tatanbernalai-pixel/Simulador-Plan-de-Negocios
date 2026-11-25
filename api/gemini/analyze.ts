@@ -32,7 +32,7 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: 'Faltan los datos del modelo financiero o cálculos.' });
     }
 
-    const apiKey = (process.env.GEMINI_API_KEY || '').trim();
+    const apiKey = (process.env.GEMINI_API_KEY || '').trim().replace(/^["']|["']$/g, '');
     if (!apiKey) {
       return res.status(500).json({
         error: 'No se ha configurado GEMINI_API_KEY en las variables de entorno de Vercel.',

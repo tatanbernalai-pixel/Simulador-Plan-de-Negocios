@@ -6,7 +6,7 @@ interface HandlerResult {
 }
 
 function getAiClient(): GoogleGenAI | null {
-  const apiKey = (process.env.GEMINI_API_KEY || '').trim();
+  const apiKey = (process.env.GEMINI_API_KEY || '').trim().replace(/^["']|["']$/g, '');
   if (!apiKey) return null;
 
   return new GoogleGenAI({
